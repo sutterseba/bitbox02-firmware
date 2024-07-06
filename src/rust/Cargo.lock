@@ -55,7 +55,7 @@ checksum = "383d29d513d8764dcdc42ea295d979eb99c3c9f00607b3692cf68a431f7dca72"
 [[package]]
 name = "bip32-ed25519"
 version = "0.1.2"
-source = "git+https://github.com/digitalbitbox/rust-bip32-ed25519?tag=v0.1.2#a94181781274ba8277bea720ffc8d3fab6e34c41"
+source = "git+https://github.com/BitBoxSwiss/rust-bip32-ed25519?tag=v0.1.2#a94181781274ba8277bea720ffc8d3fab6e34c41"
 dependencies = [
  "curve25519-dalek",
  "hmac",

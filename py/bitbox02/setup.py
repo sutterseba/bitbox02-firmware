@@ -42,7 +42,7 @@ setup(
     description="Python library for bitbox02 communication",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
-    url="https://github.com/digitalbitbox/bitbox02-firmware",
+    url="https://github.com/BitBoxSwiss/bitbox02-firmware",
     python_requires=">=3.6",
     classifiers=[
         "Intended Audience :: Developers",
