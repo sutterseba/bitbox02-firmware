@@ -195,3 +195,6 @@ clean:
 # When you vendor rust libs avoid duplicates
 vendor-rust-deps:
 	(cd external; ./vendor-rust.sh)
+
+locize-fix:
+	locize ft src/i18n/locales --format json
