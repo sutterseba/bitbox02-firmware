@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::hal::ui::ConfirmParams;
+use crate::i18n::I18n as _;
 #[cfg(not(feature = "app-bitcoin"))]
 compile_error!("Bitcoin code is being compiled even though the app-bitcoin feature is not enabled");
 
@@ -21,6 +22,8 @@ use super::Error;
 use super::pb;
 
 use crate::hal::Ui;
+
+use alloc::string::ToString;
 
 use util::bip32::HARDENED;
 
@@ -99,13 +102,19 @@ async fn xpub(
         keypath::validate_xpub(keypath, params.bip44_coin, params.taproot_support).is_err();
     if is_unusual {
         // For unusual keypaths, we allow export after a confirmation.
+        let title = if display {
+            "xpub".into()
+        } else {
+            hal.tr("Export xpub")
+        };
+        let body = hal.tr_format(
+            "Warning: unusual keypath {}. Proceed only if you know what you are doing.",
+            &[&util::bip32::to_string(keypath)],
+        );
         hal.ui()
             .confirm(&ConfirmParams {
-                title: if display { "xpub" } else { "Export xpub" },
-                body: &format!(
-                    "Warning: unusual keypath {}. Proceed only if you know what you are doing.",
-                    util::bip32::to_string(keypath)
-                ),
+                title: &title,
+                body: &body,
                 scrollable: true,
                 longtouch: true,
                 ..Default::default()
@@ -120,9 +129,15 @@ async fn xpub(
         let title = if is_unusual {
             "".into()
         } else if keypath == [45 + HARDENED] {
-            format!("{}\nat\n{}", params.name, util::bip32::to_string(keypath))
+            hal.tr_format(
+                "{}\nat\n{}",
+                &[params.name, &util::bip32::to_string(keypath)],
+            )
         } else {
-            format!("{}\naccount #{}", params.name, keypath[2] - HARDENED + 1)
+            hal.tr_format(
+                "{}\naccount #{}",
+                &[params.name, &(keypath[2] - HARDENED + 1).to_string()],
+            )
         };
 
         let confirm_params = ConfirmParams {
@@ -209,9 +224,9 @@ pub async fn address_multisig(
         Some(name) => name,
         None => return Err(Error::InvalidInput),
     };
-    let title = "Receive to";
+    let title = hal.tr("Receive to");
     if display {
-        multisig::confirm(hal, title, coin_params, &name, multisig).await?;
+        multisig::confirm(hal, &title, coin_params, &name, multisig).await?;
     }
     let address = common::Payload::from_multisig(
         coin_params,
@@ -224,7 +239,7 @@ pub async fn address_multisig(
         let address_formatted = util::strings::format_address(&address);
         hal.ui()
             .confirm(&ConfirmParams {
-                title,
+                title: &title,
                 body: &address_formatted,
                 scrollable: true,
                 ..Default::default()
@@ -251,11 +266,11 @@ async fn address_policy(
 
     let name = parsed.name(hal, coin_params)?.ok_or(Error::InvalidInput)?;
 
-    let title = "Receive to";
+    let title = hal.tr("Receive to");
 
     if display {
         parsed
-            .confirm(hal, title, coin_params, &name, policies::Mode::Basic)
+            .confirm(hal, &title, coin_params, &name, policies::Mode::Basic)
             .await?;
     }
 
@@ -265,7 +280,7 @@ async fn address_policy(
         let address_formatted = util::strings::format_address(&address);
         hal.ui()
             .confirm(&ConfirmParams {
-                title,
+                title: &title,
                 body: &address_formatted,
                 scrollable: true,
                 ..Default::default()

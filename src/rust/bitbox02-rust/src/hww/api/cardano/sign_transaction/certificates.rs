@@ -5,7 +5,9 @@ use super::super::keypath::validate_address_shelley_stake;
 use super::super::params;
 use super::super::pb;
 use crate::hal::ui::ConfirmParams;
+use crate::i18n::I18n as _;
 
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use pb::cardano_sign_transaction_request::{
@@ -30,13 +32,12 @@ pub async fn verify<'a>(
                 validate_address_shelley_stake(keypath, Some(bip44_account))?;
                 signing_keypaths.push(keypath);
                 // 2 ADA will be deposited and refunded once delegation stops, independent of the staking rewards.
+                let account = (keypath[2] + 1 - HARDENED).to_string();
+                let body = hal.tr_format("Register staking key for account #{}?", &[&account]);
                 hal.ui()
                     .confirm(&ConfirmParams {
                         title: params.name,
-                        body: &format!(
-                            "Register staking key for account #{}?",
-                            keypath[2] + 1 - HARDENED
-                        ),
+                        body: &body,
                         scrollable: true,
                         accept_is_nextarrow: true,
                         ..Default::default()
@@ -47,13 +48,12 @@ pub async fn verify<'a>(
                 validate_address_shelley_stake(keypath, Some(bip44_account))?;
                 signing_keypaths.push(keypath);
                 // 2 ADA will be refunded back, independent of the staking rewards.
+                let account = (keypath[2] + 1 - HARDENED).to_string();
+                let body = hal.tr_format("Stop stake delegation for account #{}?", &[&account]);
                 hal.ui()
                     .confirm(&ConfirmParams {
                         title: params.name,
-                        body: &format!(
-                            "Stop stake delegation for account #{}?",
-                            keypath[2] + 1 - HARDENED
-                        ),
+                        body: &body,
                         scrollable: true,
                         accept_is_nextarrow: true,
                         ..Default::default()
@@ -66,14 +66,16 @@ pub async fn verify<'a>(
             }) => {
                 validate_address_shelley_stake(keypath, Some(bip44_account))?;
                 signing_keypaths.push(keypath);
+                let account = (keypath[2] + 1 - HARDENED).to_string();
+                let pool = hex::encode(pool_keyhash);
+                let body = hal.tr_format(
+                    "Delegate staking for account #{} to pool {}?",
+                    &[&account, &pool],
+                );
                 hal.ui()
                     .confirm(&ConfirmParams {
                         title: params.name,
-                        body: &format!(
-                            "Delegate staking for account #{} to pool {}?",
-                            keypath[2] + 1 - HARDENED,
-                            hex::encode(pool_keyhash),
-                        ),
+                        body: &body,
                         scrollable: true,
                         accept_is_nextarrow: true,
                         ..Default::default()
@@ -89,26 +91,31 @@ pub async fn verify<'a>(
                 signing_keypaths.push(keypath);
                 let drep_type_name =
                     match certificate::vote_delegation::CardanoDRepType::try_from(*r#type)? {
-                        certificate::vote_delegation::CardanoDRepType::KeyHash => "Key Hash",
-                        certificate::vote_delegation::CardanoDRepType::ScriptHash => "Script Hash",
+                        certificate::vote_delegation::CardanoDRepType::KeyHash => {
+                            hal.tr("Key Hash")
+                        }
+                        certificate::vote_delegation::CardanoDRepType::ScriptHash => {
+                            hal.tr("Script Hash")
+                        }
                         certificate::vote_delegation::CardanoDRepType::AlwaysAbstain => {
-                            "Always Abstain"
+                            hal.tr("Always Abstain")
                         }
                         certificate::vote_delegation::CardanoDRepType::AlwaysNoConfidence => {
-                            "Always No Confidence"
+                            hal.tr("Always No Confidence")
                         }
                     };
+                let account = (keypath[2] + 1 - HARDENED).to_string();
                 match drep_credhash {
                     Some(hash) => {
+                        let hash = hex::encode(hash);
+                        let body = hal.tr_format(
+                            "Delegate voting for account #{} to type {} and drep {}?",
+                            &[&account, drep_type_name.as_ref(), &hash],
+                        );
                         hal.ui()
                             .confirm(&ConfirmParams {
                                 title: params.name,
-                                body: &format!(
-                                    "Delegate voting for account #{} to type {} and drep {}?",
-                                    keypath[2] + 1 - HARDENED,
-                                    drep_type_name,
-                                    hex::encode(hash),
-                                ),
+                                body: &body,
                                 scrollable: true,
                                 accept_is_nextarrow: true,
                                 ..Default::default()
@@ -116,14 +123,14 @@ pub async fn verify<'a>(
                             .await?;
                     }
                     None => {
+                        let body = hal.tr_format(
+                            "Delegate voting for account #{} to type {}?",
+                            &[&account, drep_type_name.as_ref()],
+                        );
                         hal.ui()
                             .confirm(&ConfirmParams {
                                 title: params.name,
-                                body: &format!(
-                                    "Delegate voting for account #{} to type {}?",
-                                    keypath[2] + 1 - HARDENED,
-                                    drep_type_name,
-                                ),
+                                body: &body,
                                 scrollable: true,
                                 accept_is_nextarrow: true,
                                 ..Default::default()

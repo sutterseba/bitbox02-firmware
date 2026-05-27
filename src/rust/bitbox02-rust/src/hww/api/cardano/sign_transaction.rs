@@ -7,7 +7,7 @@ mod certificates;
 use super::Error;
 use super::pb;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use bitcoin::bech32;
@@ -18,6 +18,7 @@ use blake2::{
 };
 
 use crate::hal::Ui;
+use crate::i18n::I18n as _;
 use crate::workflow::transaction;
 
 use pb::cardano_response::Response;
@@ -73,10 +74,19 @@ async fn verify_slot(
     }
     let epoch = SHELLEY_START_EPOCH + (slot - SHELLEY_START_SLOT) / SHELLEY_SLOTS_IN_EPOCH;
     let slot_in_epoch = (slot - SHELLEY_START_SLOT) % SHELLEY_SLOTS_IN_EPOCH;
+    let title = hal.tr(title);
+    let body = hal.tr_format(
+        "{}\nslot {} in\nepoch {}",
+        &[
+            title.as_ref(),
+            &slot_in_epoch.to_string(),
+            &epoch.to_string(),
+        ],
+    );
     hal.ui()
         .confirm(&ConfirmParams {
             title: params.name,
-            body: &format!("{}\nslot {} in\nepoch {}", title, slot_in_epoch, epoch),
+            body: &body,
             accept_is_nextarrow: true,
             ..Default::default()
         })
@@ -158,10 +168,11 @@ async fn _process(
             && (request.validity_interval_start > request.ttl))
             || (ttl_present && request.ttl < SHELLEY_START_SLOT);
         if cannot_be_mined {
+            let body = hal.tr("Transaction\ncannot be\nmined");
             hal.ui()
                 .confirm(&ConfirmParams {
                     title: params.name,
-                    body: "Transaction\ncannot be\nmined",
+                    body: &body,
                     accept_is_nextarrow: true,
                     ..Default::default()
                 })
@@ -196,14 +207,16 @@ async fn _process(
             return Err(Error::InvalidInput);
         }
 
+        let account = (withdrawal.keypath[2] + 1 - HARDENED).to_string();
+        let value = format_value(params, withdrawal.value);
+        let body = hal.tr_format(
+            "Withdraw {} in staking rewards for account #{}?",
+            &[&value, &account],
+        );
         hal.ui()
             .confirm(&ConfirmParams {
                 title: params.name,
-                body: &format!(
-                    "Withdraw {} in staking rewards for account #{}?",
-                    format_value(params, withdrawal.value),
-                    withdrawal.keypath[2] + 1 - HARDENED,
-                ),
+                body: &body,
                 scrollable: true,
                 accept_is_nextarrow: true,
                 ..Default::default()
@@ -249,14 +262,18 @@ async fn _process(
 
                 for asset_group in output.asset_groups.iter() {
                     for token in asset_group.tokens.iter() {
+                        let title = hal.tr("Send token");
+                        let body = hal.tr_format(
+                            "Amount: {}. Asset: {}",
+                            &[
+                                &util::decimal::format(token.value, 0),
+                                &format_asset(&asset_group.policy_id, &token.asset_name),
+                            ],
+                        );
                         hal.ui()
                             .confirm(&ConfirmParams {
-                                title: "Send token",
-                                body: &format!(
-                                    "Amount: {}. Asset: {}",
-                                    util::decimal::format(token.value, 0),
-                                    format_asset(&asset_group.policy_id, &token.asset_name),
-                                ),
+                                title: &title,
+                                body: &body,
                                 accept_is_nextarrow: true,
                                 scrollable: true,
                                 ..Default::default()
@@ -269,10 +286,11 @@ async fn _process(
     }
 
     if total == 0 {
+        let body = hal.tr_format("Fee\n{}", &[&format_value(params, request.fee)]);
         hal.ui()
             .confirm(&ConfirmParams {
                 title: params.name,
-                body: &format!("Fee\n{}", format_value(params, request.fee)),
+                body: &body,
                 longtouch: true,
                 ..Default::default()
             })
@@ -288,7 +306,8 @@ async fn _process(
         .await?;
     }
 
-    hal.ui().status("Transaction\nconfirmed", true).await;
+    let status = hal.tr("Transaction\nconfirmed");
+    hal.ui().status(&status, true).await;
 
     let tx_body_hash: [u8; 32] = {
         let mut hasher = Blake2bVar::new(32).unwrap();
@@ -319,7 +338,8 @@ pub async fn process(
 ) -> Result<Response, Error> {
     let result = _process(hal, request).await;
     if let Err(Error::UserAbort) = result {
-        hal.ui().status("Transaction\ncanceled", false).await;
+        let status = hal.tr("Transaction\ncanceled");
+        hal.ui().status(&status, false).await;
     }
     result
 }
