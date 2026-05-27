@@ -2,6 +2,7 @@
 
 use super::Error;
 use crate::hal::ui::ConfirmParams;
+use crate::i18n::I18n as _;
 use crate::pb;
 
 use pb::response::Response;
@@ -12,9 +13,15 @@ pub async fn process(
     hal: &mut impl crate::hal::Hal,
     &pb::SetMnemonicPassphraseEnabledRequest { enabled }: &pb::SetMnemonicPassphraseEnabledRequest,
 ) -> Result<Response, Error> {
+    let title = if enabled {
+        hal.tr("Enable")
+    } else {
+        hal.tr("Disable")
+    };
+    let body = hal.tr("Optional\npassphrase");
     let params = ConfirmParams {
-        title: if enabled { "Enable" } else { "Disable" },
-        body: "Optional\npassphrase",
+        title: &title,
+        body: &body,
         longtouch: true,
         ..Default::default()
     };

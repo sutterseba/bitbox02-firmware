@@ -3,6 +3,7 @@
 use super::Error;
 use super::pb;
 use crate::hal::ui::{ConfirmParams, Progress};
+use crate::i18n::I18n as _;
 
 use super::super::payment_request;
 use super::common::format_amount;
@@ -10,13 +11,13 @@ use super::policies::TaprootSpendInfo;
 use super::script_configs::{ValidatedScriptConfig, ValidatedScriptConfigWithKeypath};
 use super::{bip143, bip341, common, keypath};
 
-use crate::hal::Ui;
+use crate::hal::{Memory, Ui};
 use crate::keystore::Compute;
 use crate::secp256k1::SECP256K1;
 use crate::workflow::transaction;
 use crate::xpubcache::Bip32XpubCache;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use pb::request::Request;
@@ -511,7 +512,8 @@ async fn validate_input_script_configs<'a>(
         },
     ] = script_configs.as_slice()
     {
-        super::multisig::confirm(hal, "Spend from", coin_params, name, multisig).await?;
+        let title = hal.tr("Spend from");
+        super::multisig::confirm(hal, &title, coin_params, name, multisig).await?;
         return Ok(script_configs);
     }
 
@@ -534,14 +536,9 @@ async fn validate_input_script_configs<'a>(
         // the input keypath, and the computation of the pk_script checks that full keypath is
         // valid.
 
+        let title = hal.tr("Spend from");
         parsed_policy
-            .confirm(
-                hal,
-                "Spend from",
-                coin_params,
-                name,
-                super::policies::Mode::Basic,
-            )
+            .confirm(hal, &title, coin_params, name, super::policies::Mode::Basic)
             .await?;
 
         return Ok(script_configs);
@@ -725,7 +722,8 @@ async fn _process(
     // transaction.
     let mut payment_request_seen = false;
 
-    let mut progress_component = Some(hal.ui().progress_create("Loading transaction..."));
+    let progress_title = hal.tr("Loading transaction...");
+    let mut progress_component = Some(hal.ui().progress_create(&progress_title));
 
     let mut next_response = NextResponse {
         next: Default::default(),
@@ -1028,7 +1026,8 @@ async fn _process(
                         return Err(Error::Disabled);
                     }
                     Err(_) => {
-                        hal.ui().status("Invalid\npayment request", false).await;
+                        let status = hal.tr("Invalid\npayment request");
+                        hal.ui().status(&status, false).await;
                         return Err(Error::InvalidInput);
                     }
                 }
@@ -1053,10 +1052,13 @@ async fn _process(
                         let output_script_config = validated_output_script_configs
                             .get(output_script_config_index as usize)
                             .ok_or(Error::InvalidInput)?;
-                        Some(output_script_config.self_transfer_representation()?)
+                        Some(
+                            output_script_config
+                                .self_transfer_representation(hal.memory().get_device_language())?,
+                        )
                     } else {
                         // Non-change output of the same account.
-                        Some("This BitBox (same account)".into())
+                        Some(hal.tr("This BitBox (same account)").into_owned())
                     }
                 } else {
                     // Regular outgoing payment, no prefix.
@@ -1099,10 +1101,15 @@ async fn _process(
     }
 
     if num_changes > 1 {
+        let title = hal.tr("Warning");
+        let body = hal.tr_format(
+            "There are {}\nchange outputs.\nProceed?",
+            &[&num_changes.to_string()],
+        );
         hal.ui()
             .confirm(&ConfirmParams {
-                title: "Warning",
-                body: &format!("There are {}\nchange outputs.\nProceed?", num_changes),
+                title: &title,
+                body: &body,
                 accept_is_nextarrow: true,
                 ..Default::default()
             })
@@ -1118,22 +1125,22 @@ async fn _process(
     if request.locktime > 0 && locktime_applies {
         // The RBF nsequence bytes are often set in conjunction with a locktime,
         // so verify both simultaneously.
+        let rbf_status = if coin_params.rbf_support {
+            if rbf {
+                hal.tr("Transaction is RBF")
+            } else {
+                hal.tr("Transaction is not RBF")
+            }
+        } else {
+            "".into()
+        };
+        let body = hal.tr_format(
+            "Locktime on block:\n{}\n{}",
+            &[&request.locktime.to_string(), &rbf_status],
+        );
         hal.ui()
             .confirm(&ConfirmParams {
-                body: &format!(
-                    "Locktime on block:\n{}\n{}",
-                    request.locktime,
-                    if coin_params.rbf_support {
-                        if rbf {
-                            "Transaction is RBF"
-                        } else {
-                            "Transaction is not RBF"
-                        }
-                    } else {
-                        // There is no RBF in Litecoin.
-                        ""
-                    }
-                ),
+                body: &body,
                 accept_is_nextarrow: true,
                 ..Default::default()
             })
@@ -1159,7 +1166,8 @@ async fn _process(
         fee_percentage,
     )
     .await?;
-    hal.ui().status("Transaction\nconfirmed", true).await;
+    let status = hal.tr("Transaction\nconfirmed");
+    hal.ui().status(&status, true).await;
 
     let hash_outputs = hasher_outputs.finalize();
 
@@ -1169,7 +1177,8 @@ async fn _process(
     // Show progress of signing inputs if there are more than 2 inputs. This is an arbitrary cutoff;
     // less or equal to 2 inputs is fast enough so it does not need a progress bar.
     let mut progress_component = if request.num_inputs > 2 {
-        Some(hal.ui().progress_create("Signing transaction..."))
+        let title = hal.tr("Signing transaction...");
+        Some(hal.ui().progress_create(&title))
     } else {
         None
     };
@@ -1335,7 +1344,8 @@ pub async fn process(
 ) -> Result<Response, Error> {
     let result = _process(hal, request).await;
     if let Err(Error::UserAbort) = result {
-        hal.ui().status("Transaction\ncanceled", false).await;
+        let status = hal.tr("Transaction\ncanceled");
+        hal.ui().status(&status, false).await;
     }
     result
 }

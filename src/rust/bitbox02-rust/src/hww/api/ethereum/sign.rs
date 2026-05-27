@@ -10,9 +10,9 @@ use super::sighash::DataProducer;
 use super::truncating_hex_preview_byte_cap;
 use crate::hal::ui::ConfirmParams;
 
-use crate::keystore;
-
 use crate::hal::Ui;
+use crate::i18n::I18n as _;
+use crate::keystore;
 use crate::workflow::transaction;
 
 use alloc::string::String;
@@ -184,7 +184,8 @@ async fn verify_payment_request_recipient(
     {
         Ok(()) => Ok(()),
         Err(_) => {
-            hal.ui().status("Invalid\npayment request", false).await;
+            let status = hal.tr("Invalid\npayment request");
+            hal.ui().status(&status, false).await;
             Err(Error::InvalidInput)
         }
     }
@@ -356,7 +357,10 @@ async fn verify_erc20_transaction(
             // ERC20 token: fee has a different unit (ETH), so the total is just the value again.
             (value.clone(), value.clone())
         }
-        None => ("Unknown token".into(), "Unknown amount".into()),
+        None => (
+            hal.tr("Unknown token").into_owned(),
+            hal.tr("Unknown amount").into_owned(),
+        ),
     };
     hal.ui()
         .verify_recipient(&recipient_address_display, &formatted_value)
@@ -413,26 +417,30 @@ async fn verify_standard_transaction(
 
     let mut prepared_streaming_data = None;
     if !request.data().is_empty() || data_length > 0 {
+        let title = hal.tr("Unknown\ncontract");
+        let body = if data_length > 0 {
+            hal.tr("You are signing a\ncontract interaction\nwith large data.")
+        } else {
+            hal.tr("You will be shown\nthe raw\ntransaction data.")
+        };
         hal.ui()
             .confirm(&ConfirmParams {
-                title: "Unknown\ncontract",
-                body: if data_length > 0 {
-                    "You are signing a\ncontract interaction\nwith large data."
-                } else {
-                    "You will be shown\nthe raw\ntransaction data."
-                },
+                title: &title,
+                body: &body,
                 accept_is_nextarrow: true,
                 ..Default::default()
             })
             .await?;
+        let title = hal.tr("Unknown\ncontract");
+        let body = if data_length > 0 {
+            hal.tr("Only proceed if you\nfully understand\nthe risks involved.")
+        } else {
+            hal.tr("Only proceed if you\nunderstand exactly\nwhat the data means.")
+        };
         hal.ui()
             .confirm(&ConfirmParams {
-                title: "Unknown\ncontract",
-                body: if data_length > 0 {
-                    "Only proceed if you\nfully understand\nthe risks involved."
-                } else {
-                    "Only proceed if you\nunderstand exactly\nwhat the data means."
-                },
+                title: &title,
+                body: &body,
                 accept_is_nextarrow: true,
                 ..Default::default()
             })
@@ -448,18 +456,21 @@ async fn verify_standard_transaction(
             (request.data().len(), hex::encode(request.data()))
         };
         if body.len() > MAX_CONFIRM_BODY_SIZE {
+            let title = hal.tr("Warning");
+            let warning_body = hal.tr("The next value is\ntoo large to display\nin full");
             hal.ui()
                 .confirm(&ConfirmParams {
-                    title: "Warning",
-                    body: "The next value is\ntoo large to display\nin full",
+                    title: &title,
+                    body: &warning_body,
                     accept_is_nextarrow: true,
                     ..Default::default()
                 })
                 .await?;
         }
+        let title = hal.tr("Transaction\ndata");
         hal.ui()
             .confirm(&ConfirmParams {
-                title: "Transaction\ndata",
+                title: &title,
                 body: &body,
                 scrollable: true,
                 display_size,
@@ -498,9 +509,10 @@ pub async fn _process(
 
     // Show chain confirmation only for known networks
     if super::params::is_known_network(request.coin()?, request.chain_id()) {
+        let body = hal.tr_format("Sign transaction on\n\n{}", &[params.name]);
         hal.ui()
             .confirm(&ConfirmParams {
-                body: &format!("Sign transaction on\n\n{}", params.name),
+                body: &body,
                 accept_is_nextarrow: true,
                 ..Default::default()
             })
@@ -587,7 +599,8 @@ pub async fn _process(
         precomputed_standard_hash =
             verify_standard_transaction(hal, request, &params, payment_request).await?;
     }
-    hal.ui().status("Transaction\nconfirmed", true).await;
+    let status = hal.tr("Transaction\nconfirmed");
+    hal.ui().status(&status, true).await;
 
     let hash: [u8; 32] = match precomputed_standard_hash {
         Some(hash) => hash,
@@ -642,7 +655,8 @@ pub async fn process(
 ) -> Result<Response, Error> {
     let result = _process(hal, request).await;
     if let Err(Error::UserAbort) = result {
-        hal.ui().status("Transaction\ncanceled", false).await;
+        let status = hal.tr("Transaction\ncanceled");
+        hal.ui().status(&status, false).await;
     }
     result
 }
