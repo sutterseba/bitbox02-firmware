@@ -7,6 +7,7 @@ use time::{OffsetDateTime, UtcOffset, Weekday};
 pub enum DateLocale {
     English,
     German,
+    Italian,
 }
 
 pub struct Tm {
@@ -24,30 +25,37 @@ impl Tm {
             Weekday::Sunday => match locale {
                 DateLocale::English => "Sun",
                 DateLocale::German => "So",
+                DateLocale::Italian => "Dom",
             },
             Weekday::Monday => match locale {
                 DateLocale::English => "Mon",
                 DateLocale::German => "Mo",
+                DateLocale::Italian => "Lun",
             },
             Weekday::Tuesday => match locale {
                 DateLocale::English => "Tue",
                 DateLocale::German => "Di",
+                DateLocale::Italian => "Mar",
             },
             Weekday::Wednesday => match locale {
                 DateLocale::English => "Wed",
                 DateLocale::German => "Mi",
+                DateLocale::Italian => "Mer",
             },
             Weekday::Thursday => match locale {
                 DateLocale::English => "Thu",
                 DateLocale::German => "Do",
+                DateLocale::Italian => "Gio",
             },
             Weekday::Friday => match locale {
                 DateLocale::English => "Fri",
                 DateLocale::German => "Fr",
+                DateLocale::Italian => "Ven",
             },
             Weekday::Saturday => match locale {
                 DateLocale::English => "Sat",
                 DateLocale::German => "Sa",
+                DateLocale::Italian => "Sab",
             },
         }
         .into()
@@ -68,6 +76,12 @@ impl Tm {
                 date.day(),
             ),
             DateLocale::German => format!(
+                "{:02}.{:02}.{}",
+                date.day(),
+                date.month() as u8,
+                date.year(),
+            ),
+            DateLocale::Italian => format!(
                 "{:02}.{:02}.{}",
                 date.day(),
                 date.month() as u8,
@@ -181,6 +195,14 @@ mod tests {
         assert_eq!(
             format_datetime_locale(1601281809, -32400, false, DateLocale::German),
             Ok("So 27.09.2020\n23:30".into())
+        );
+        assert_eq!(
+            format_datetime_locale(1779964200, 0, true, DateLocale::Italian),
+            Ok("Gio 28.05.2026".into())
+        );
+        assert_eq!(
+            format_datetime_locale(1601281809, -32400, false, DateLocale::Italian),
+            Ok("Dom 27.09.2020\n23:30".into())
         );
     }
 }

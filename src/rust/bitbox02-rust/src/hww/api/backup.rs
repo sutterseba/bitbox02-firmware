@@ -255,6 +255,45 @@ mod tests {
         );
     }
 
+    #[async_test::test]
+    pub async fn test_create_italian_date() {
+        const TIMESTAMP: u32 = 1779964200;
+
+        mock_unlocked();
+
+        let mut mock_hal = TestingHal::new();
+        mock_hal
+            .memory
+            .set_device_language(bitbox_hal::memory::Language::Italian)
+            .unwrap();
+        mock_hal.sd.inserted = Some(true);
+        assert_eq!(
+            create(
+                &mut mock_hal,
+                &pb::CreateBackupRequest {
+                    timestamp: TIMESTAMP,
+                    timezone_offset: 0,
+                }
+            )
+            .await,
+            Ok(Response::Success(pb::Success {}))
+        );
+        assert_eq!(
+            mock_hal.ui.screens,
+            vec![
+                Screen::Confirm {
+                    title: "È oggi?".into(),
+                    body: "Gio 28.05.2026".into(),
+                    longtouch: false
+                },
+                Screen::Status {
+                    title: "Backup creato".into(),
+                    success: true
+                }
+            ]
+        );
+    }
+
     /// Test backup creation on a initialized keystore. The sdcard does not contain the backup yet.
     #[async_test::test]
     pub async fn test_create_initialized_new() {

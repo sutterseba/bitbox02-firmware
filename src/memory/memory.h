@@ -33,6 +33,7 @@ typedef enum {
 typedef enum {
     MEMORY_DEVICE_LANGUAGE_EN = 0,
     MEMORY_DEVICE_LANGUAGE_DE = 1,
+    MEMORY_DEVICE_LANGUAGE_IT = 2,
 } memory_device_language_t;
 
 typedef struct {

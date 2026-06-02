@@ -217,7 +217,8 @@
     "setDeviceLanguage": {
       "confirm": "Change language\nto {}?",
       "english": "English",
-      "german": "German"
+      "german": "German",
+      "italian": "Italian"
     },
     "setPassword": {
       "repeat": "Repeat password",

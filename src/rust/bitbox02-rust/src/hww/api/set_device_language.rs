@@ -37,6 +37,7 @@ fn language_name(
     match language {
         Language::English => crate::i18n::translate(current_language, "English"),
         Language::German => crate::i18n::translate(current_language, "German"),
+        Language::Italian => crate::i18n::translate(current_language, "Italian"),
     }
 }
 
@@ -54,7 +55,7 @@ mod tests {
             process(
                 &mut mock_hal,
                 &pb::SetDeviceLanguageRequest {
-                    language: "de".into()
+                    language: "it".into()
                 }
             )
             .await,
@@ -64,9 +65,24 @@ mod tests {
             mock_hal.ui.screens,
             vec![Screen::Confirm {
                 title: "".into(),
-                body: "Change language\nto German?".into(),
+                body: "Change language\nto Italian?".into(),
                 longtouch: false,
             }]
+        );
+        assert_eq!(
+            mock_hal.memory.get_device_language(),
+            bitbox_hal::memory::Language::Italian
+        );
+
+        assert_eq!(
+            process(
+                &mut mock_hal,
+                &pb::SetDeviceLanguageRequest {
+                    language: "de".into()
+                }
+            )
+            .await,
+            Ok(Response::Success(pb::Success {}))
         );
         assert_eq!(
             mock_hal.memory.get_device_language(),
@@ -88,7 +104,12 @@ mod tests {
             vec![
                 Screen::Confirm {
                     title: "".into(),
-                    body: "Change language\nto German?".into(),
+                    body: "Change language\nto Italian?".into(),
+                    longtouch: false,
+                },
+                Screen::Confirm {
+                    title: "".into(),
+                    body: "Cambiare lingua\nin Tedesco?".into(),
                     longtouch: false,
                 },
                 Screen::Confirm {
@@ -103,7 +124,7 @@ mod tests {
             bitbox_hal::memory::Language::English
         );
 
-        mock_hal.ui.abort_nth(2);
+        mock_hal.ui.abort_nth(3);
         assert_eq!(
             process(
                 &mut mock_hal,

@@ -277,7 +277,8 @@ void memory_get_device_name(char* name_out)
 
 bool memory_set_device_language(memory_device_language_t language)
 {
-    if (language != MEMORY_DEVICE_LANGUAGE_EN && language != MEMORY_DEVICE_LANGUAGE_DE) {
+    if (language != MEMORY_DEVICE_LANGUAGE_EN && language != MEMORY_DEVICE_LANGUAGE_DE &&
+        language != MEMORY_DEVICE_LANGUAGE_IT) {
         return false;
     }
     chunk_1_t chunk = {0};
@@ -295,6 +296,8 @@ memory_device_language_t memory_get_device_language(void)
     switch (chunk.fields.device_language) {
     case MEMORY_DEVICE_LANGUAGE_DE:
         return MEMORY_DEVICE_LANGUAGE_DE;
+    case MEMORY_DEVICE_LANGUAGE_IT:
+        return MEMORY_DEVICE_LANGUAGE_IT;
     case MEMORY_DEVICE_LANGUAGE_EN:
     default:
         return MEMORY_DEVICE_LANGUAGE_EN;
