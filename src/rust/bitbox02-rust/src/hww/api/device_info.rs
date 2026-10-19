@@ -35,6 +35,10 @@ pub async fn process(hal: &mut impl crate::hal::Hal) -> Result<Response, Error> 
     Ok(Response::DeviceInfo(pb::DeviceInfoResponse {
         name: hal.memory().get_device_name(),
         language: crate::i18n::language_code(hal.memory().get_device_language()).into(),
+        supported_languages: crate::i18n::SUPPORTED_LANGUAGES
+            .iter()
+            .map(|&language| language.into())
+            .collect(),
         initialized: hal.memory().is_initialized(),
         version: crate::version::FIRMWARE_VERSION_SHORT.into(),
         mnemonic_passphrase_enabled: hal.memory().is_mnemonic_passphrase_enabled(),
@@ -69,27 +73,25 @@ mod tests {
     #[async_test::test]
     async fn test_process_language() {
         let mut hal = TestingHal::new();
-        assert_eq!(_device_info(&mut hal).await.language, "en");
+        let info = _device_info(&mut hal).await;
+        assert_eq!(info.language, "en");
+        assert_eq!(info.supported_languages, ["en", "de", "it", "es"]);
 
-        hal.memory
-            .set_device_language(hal_memory::Language::German)
-            .unwrap();
-        assert_eq!(_device_info(&mut hal).await.language, "de");
-
-        hal.memory
-            .set_device_language(hal_memory::Language::Italian)
-            .unwrap();
-        assert_eq!(_device_info(&mut hal).await.language, "it");
-
-        hal.memory
-            .set_device_language(hal_memory::Language::Spanish)
-            .unwrap();
-        assert_eq!(_device_info(&mut hal).await.language, "es");
-
-        hal.memory
-            .set_device_language(hal_memory::Language::English)
-            .unwrap();
-        assert_eq!(_device_info(&mut hal).await.language, "en");
+        for language in &info.supported_languages {
+            assert_eq!(
+                super::super::set_device_language::process(
+                    &mut hal,
+                    &pb::SetDeviceLanguageRequest {
+                        language: language.clone(),
+                    },
+                )
+                .await,
+                Ok(Response::Success(pb::Success {})),
+            );
+            let updated_info = _device_info(&mut hal).await;
+            assert_eq!(&updated_info.language, language);
+            assert_eq!(updated_info.supported_languages, info.supported_languages);
+        }
     }
 
     #[async_test::test]

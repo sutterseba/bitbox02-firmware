@@ -145,6 +145,9 @@ pub struct DeviceInfoResponse {
     /// Current UI language code, e.g. "en" or "de". Empty on firmware without language support.
     #[prost(string, tag = "10")]
     pub language: ::prost::alloc::string::String,
+    /// Empty on firmware without supported-language reporting.
+    #[prost(string, repeated, tag = "11")]
+    pub supported_languages: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// Nested message and enum types in `DeviceInfoResponse`.
 pub mod device_info_response {

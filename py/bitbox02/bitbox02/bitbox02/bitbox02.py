@@ -170,6 +170,7 @@ class BitBox02(BitBoxCommonAPI):
         result: Dict[str, Any] = {
             "name": response.device_info.name,
             "language": response.device_info.language,
+            "supported_languages": list(response.device_info.supported_languages),
             "version": response.device_info.version,
             "bootloader_version": (
                 response.device_info.bootloader_version
