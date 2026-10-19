@@ -56,6 +56,12 @@ pub fn get_device_language() -> bitbox_hal::memory::Language {
         bitbox02_sys::memory_device_language_t_MEMORY_DEVICE_LANGUAGE_DE => {
             bitbox_hal::memory::Language::German
         }
+        bitbox02_sys::memory_device_language_t_MEMORY_DEVICE_LANGUAGE_IT => {
+            bitbox_hal::memory::Language::Italian
+        }
+        bitbox02_sys::memory_device_language_t_MEMORY_DEVICE_LANGUAGE_ES => {
+            bitbox_hal::memory::Language::Spanish
+        }
         _ => bitbox_hal::memory::Language::English,
     }
 }
@@ -67,6 +73,12 @@ pub fn set_device_language(language: bitbox_hal::memory::Language) -> Result<(),
         }
         bitbox_hal::memory::Language::German => {
             bitbox02_sys::memory_device_language_t_MEMORY_DEVICE_LANGUAGE_DE
+        }
+        bitbox_hal::memory::Language::Italian => {
+            bitbox02_sys::memory_device_language_t_MEMORY_DEVICE_LANGUAGE_IT
+        }
+        bitbox_hal::memory::Language::Spanish => {
+            bitbox02_sys::memory_device_language_t_MEMORY_DEVICE_LANGUAGE_ES
         }
     };
     match unsafe { bitbox02_sys::memory_set_device_language(language) } {
@@ -505,6 +517,12 @@ mod tests {
 
         set_device_language(bitbox_hal::memory::Language::German).unwrap();
         assert_eq!(get_device_language(), bitbox_hal::memory::Language::German);
+
+        set_device_language(bitbox_hal::memory::Language::Italian).unwrap();
+        assert_eq!(get_device_language(), bitbox_hal::memory::Language::Italian);
+
+        set_device_language(bitbox_hal::memory::Language::Spanish).unwrap();
+        assert_eq!(get_device_language(), bitbox_hal::memory::Language::Spanish);
 
         set_device_language(bitbox_hal::memory::Language::English).unwrap();
         assert_eq!(get_device_language(), bitbox_hal::memory::Language::English);

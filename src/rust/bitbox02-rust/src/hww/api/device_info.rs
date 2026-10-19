@@ -77,6 +77,16 @@ mod tests {
         assert_eq!(_device_info(&mut hal).await.language, "de");
 
         hal.memory
+            .set_device_language(hal_memory::Language::Italian)
+            .unwrap();
+        assert_eq!(_device_info(&mut hal).await.language, "it");
+
+        hal.memory
+            .set_device_language(hal_memory::Language::Spanish)
+            .unwrap();
+        assert_eq!(_device_info(&mut hal).await.language, "es");
+
+        hal.memory
             .set_device_language(hal_memory::Language::English)
             .unwrap();
         assert_eq!(_device_info(&mut hal).await.language, "en");
