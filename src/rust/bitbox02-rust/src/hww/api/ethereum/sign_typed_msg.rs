@@ -565,28 +565,31 @@ async fn hash_array(
 
     let array_type = member_type.array_type.as_ref().ok_or(Error::InvalidInput)?;
 
-    let title = format!(
-        "{}{}",
-        hal.tr(confirm_title(context.root_object)),
-        context.title_suffix.as_deref().unwrap_or("")
-    );
-    let list_description = if array_size == 0 {
-        crate::tr!(hal, "(empty list)").into_owned()
-    } else {
-        crate::tr_format!(hal, "list with {} elements", &[&array_size.to_string()])
-    };
-    let body = format!("{}: {}", context.formatted_path.join("."), list_description);
-    confirm::confirm_value(
-        hal,
-        &ConfirmParams {
-            title: &title,
-            body: &body,
-            scrollable: true,
-            accept_is_nextarrow: true,
-            ..Default::default()
-        },
-    )
-    .await?;
+    // Free the labels before recursion to avoid accumulating them for nested arrays.
+    {
+        let title = format!(
+            "{}{}",
+            hal.tr(confirm_title(context.root_object)),
+            context.title_suffix.as_deref().unwrap_or("")
+        );
+        let list_description = if array_size == 0 {
+            crate::tr!(hal, "(empty list)").into_owned()
+        } else {
+            crate::tr_format!(hal, "list with {} elements", &[&array_size.to_string()])
+        };
+        let body = format!("{}: {}", context.formatted_path.join("."), list_description);
+        confirm::confirm_value(
+            hal,
+            &ConfirmParams {
+                title: &title,
+                body: &body,
+                scrollable: true,
+                accept_is_nextarrow: true,
+                ..Default::default()
+            },
+        )
+        .await?;
+    }
 
     let mut hasher = sha3::Keccak256::new();
     let mut child_path = context.path.to_vec();
